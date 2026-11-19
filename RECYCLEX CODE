@@ -1,0 +1,79 @@
+#include <Servo.h>
+#include <LiquidCrystal_I2C.h> / For I2C LCD. If using standard LCD, use
+/ Define sensor pins
+#define IR_ENTRY_PIN 2 / IR sensor at the entry point
+#define IR_DETECTION_PIN 3 / IR sensor for bottle detection/size
+/ Define servo pin for entry gate
+#define SERVO_GATE_PIN 5
+/ Define motor driver pins for collection motor
+#define ENA 8 / Enable pin for L298N
+#define IN1 6 / Motor input 1
+#define IN2 7 / Motor input 2
+/ For I2C LCD (adjust address if needed, common are 0x27 or 0x3F)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+Servo entryGate;
+void setup() {
+Serial.begin(9600);
+pinMode(IR_ENTRY_PIN, INPUT);
+pinMode(IR_DETECTION_PIN, INPUT);
+/ pinMode(BUTTON_PIN, INPUT_PULLUP); / If using a button
+pinMode(ENA, OUTPUT);
+pinMode(IN1, OUTPUT);
+pinMode(IN2, OUTPUT);
+entryGate.attach(SERVO_GATE_PIN);
+entryGate.write(0); / Gate closed initially
+lcd.init();
+lcd.backlight();
+lcd.print("Insert Bottle");
+Serial.println("Reverse Vending Machine Ready");
+}
+void loop() {
+int entrySensor = digitalRead(IR_ENTRY_PIN);
+int detectionSensor = digitalRead(IR_DETECTION_PIN);
+if (entrySensor = LOW) { / Assuming LOW when object is detected
+lcd.clear();
+lcd.print("Bottle Detected!");
+Serial.println("Bottle Detected at Entry");
+delay(1000);
+entryGate.write(90); / Open gate
+Serial.println("Gate Open");
+delay(2000); / Keep gate open for bottle to pass
+if (detectionSensor = LOW) { / Assuming LOW when bottle is fully ins
+lcd.clear();
+lcd.print("Processing .");
+Serial.println("Bottle inside, processing .");
+/ Simulate bottle validation/collection
+startCollectionMotor();
+delay(3000); / Simulate collection time
+stopCollectionMotor();
+lcd.clear();
+lcd.print("Thank You!");
+lcd.setCursor(0, 1);
+lcd.print("Recycled!");
+Serial.println("Bottle Recycled!");
+delay(2000);
+} else {
+lcd.clear();
+lcd.print("No Bottle Found");
+lcd.setCursor(0, 1);
+lcd.print("Try Again");
+Serial.println("Error: Bottle not detected inside.");
+delay(2000);
+}
+entryGate.write(0); / Close gate
+Serial.println("Gate Closed");
+delay(1000);
+lcd.clear();
+lcd.print("Insert Bottle");
+}
+}
+void startCollectionMotor() {
+digitalWrite(ENA, HIGH); / Enable motor driver
+digitalWrite(IN1, HIGH); / Set direction (forward)
+digitalWrite(IN2, LOW);
+Serial.println("Collection Motor Started");
+}
+void stopCollectionMotor() {
+digitalWrite(ENA, LOW); / Disable motor driver
+Serial.println("Collection Motor Stopped");
+}
